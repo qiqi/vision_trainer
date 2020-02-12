@@ -1,0 +1,146 @@
+<html>
+    <header>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    </header>
+    <body bgcolor="#ddaaaa">
+        <b><tt id="main"> </tt></b>
+        <script>
+            var width = 25, height = 15;
+            var xPos = 0;
+            var keyL = 0, keyR = 0;
+            var colors = ["#ff0000", "#00a6a6"];
+            var obstacles = [];
+            var strokes = 5, score = 0;
+
+            function swapColor() {
+                var tmp = colors[1];
+                colors[1] = colors[0];
+                colors[0] = tmp;
+            }
+
+            function drawSpace(iLine, iStart, iEnd) {
+                var space = '';
+                if (iLine == height && iStart <= xPos && iEnd >= xPos) {
+                    if (xPos < iStart || iEnd < xPos + 3)
+                        clearInterval(intervalId);
+                    space = '&nbsp;'.repeat(xPos - iStart);
+                    space += '</span><span style="color:' + colors[0] + '">'
+                    space += '[U]';
+                    space += '</span><span style="color:' + colors[1] + '">';
+                    space += '&nbsp;'.repeat(iEnd - xPos - 3);
+                }
+                else {
+                    space = '&nbsp;'.repeat(iEnd - iStart);
+                }
+                return space;
+            }
+
+            function updatePos() {
+                xPos += keyL + keyR;
+                if (xPos < 0) xPos = 0;
+                if (xPos > width) xPos = width;
+            }
+
+            function updateText() {
+                var text = '<span style="color:' + colors[1] + '">';
+                var firstLine = "Strokes:" + strokes.toString();
+                firstLine += "&nbsp;".repeat(width - 12 - firstLine.length);
+                firstLine += '<span style="color:' + colors[0] + '">';
+                firstLine += "Score:" + score.toString();
+                firstLine += '</span><span style="color:' + colors[1] + '">';
+                text += firstLine + "<br><br>";
+                var iObstacle = 0;
+                for (var iLine = 0; iLine < height + 3; ++iLine) {
+                    text += '|';
+                    var iCol = 0;
+                    while (iObstacle < obstacles.length) {
+                        var obs = obstacles[iObstacle];
+                        if (obs[0] > iLine) break;
+                        text += drawSpace(iLine, iCol, obs[1]);
+                        text += obs[2];
+                        iCol = obs[1] + obs[2].length;
+                        iObstacle++;
+                    }
+                    text += drawSpace(iLine, iCol, width+3) + '|<br>';
+                }
+                text += '</span>';
+                $("#main").html(text);
+            }
+
+            function updateObstacles() {
+                for (iObstacle = 0; iObstacle < obstacles.length; ++iObstacle) {
+                    var obs = obstacles[iObstacle];
+                    if (obs[0] >= height + 2) {
+                        for (var iRem = iObstacle; iRem < obstacles.length; ++iRem) {
+                            if (obstacles[iRem][2] != "=")
+                                clearInterval(intervalId);
+                        }
+                        break;
+                    }
+                    obs[0]++;
+                }
+                obstacles.splice(iObstacle);
+                if (Math.random() < 0.2) {
+                    var obsPos = Math.floor(Math.random() * (width+3));
+                    var letter = "=";
+                    if (Math.random() < 0.0) {
+                        var letters = ['A', 'S', 'D', 'F', 'G'];
+                        var iL = Math.floor(Math.random() * letters.length);
+                        letter = letters[iL];
+                        strokes++;
+                    }
+                    obstacles.unshift([0, obsPos, letter]);
+                }
+            }
+
+            function updateWindow() {
+                if (typeof updateWindow.counter == 'undefined')
+                    updateWindow.counter = 0;
+                updateWindow.counter++;
+
+                updatePos();
+                updateText();
+                if (updateWindow.counter % 10 == 0)
+                    updateObstacles();
+            }
+
+            var intervalId = window.setInterval(updateWindow, 50);
+
+            $(window).keydown(function(event) {
+                if (event.which == 39) {
+                    keyL = +1;
+                    keyR = 0;
+                    event.preventDefault();
+                }
+                else if (event.which == 37) {
+                    keyR = -1;
+                    keyL = 0;
+                    event.preventDefault();
+                }
+                else if (strokes > 0) {
+                    --strokes;
+                    var char = String.fromCharCode(event.which);
+                    obstacles.forEach(function(obs) {
+                        if (char == obs[2]) {
+                            obs[2] = "=";
+                            score ++;
+                            if (Math.random() < 0.2)
+                                swapColor();
+                        }
+                    });
+                }
+            });
+
+            $(window).keyup(function(event) {
+                if (event.which == 39) {
+                    keyL = 0;
+                    event.preventDefault();
+                }
+                else if (event.which == 37) {
+                    keyR = 0;
+                    event.preventDefault();
+                }
+            });
+        </script>
+    </body>
+</html>
